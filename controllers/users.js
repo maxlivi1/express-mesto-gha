@@ -6,9 +6,21 @@ const { ERRORS, STATUS_CODES } = require('../utils/constants');
 
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
-  if (name.trim().length < 2 || about.trim().length < 2 || avatar.trim().length < 2) {
-    sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
-    return;
+  try {
+    if (name.trim().length < 2 || about.trim().length < 2 || !avatar.trim()) {
+      sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+      return;
+    }
+    if (name.trim().length > 30 || about.trim().length > 30) {
+      sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+      return;
+    }
+  } catch (error) {
+    if (error.name === 'TypeError') {
+      sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+      return;
+    }
+    sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
   }
 
   User.create({ name, about, avatar })
@@ -34,7 +46,7 @@ const getUserById = (req, res) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError
         || err instanceof mongoose.Error.CastError) {
-        sendError(throwError(ERRORS.NOT_FOUND_USER_ERROR.name), res);
+        sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
         return;
       }
       sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
@@ -51,17 +63,30 @@ const updateUserProfile = (req, res) => {
   const { name, about } = req.body;
   let userData = {};
 
-  if (!name.trim() && !about.trim()) {
-    sendError(throwError(ERRORS.BAD_USER_PROFILE_REQUEST_ERROR.name), res);
-    return;
-  }
+  try {
+    if (!name.trim() && !about.trim()) {
+      sendError(throwError(ERRORS.BAD_USER_PROFILE_REQUEST_ERROR.name), res);
+      return;
+    }
+    if (name.trim() && about.trim()) {
+      userData = { name, about };
+    } else if (name.trim()) {
+      userData = { name };
+    } else if (about.trim()) {
+      userData = { about };
+    }
 
-  if (name.trim() && about.trim()) {
-    userData = { name, about };
-  } else if (name.trim()) {
-    userData = { name };
-  } else if (about.trim()) {
-    userData = { about };
+    if (name.trim().length < 2 || name.trim().length > 30
+    || about.trim().length < 2 || about.trim().length > 30) {
+      sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+      return;
+    }
+  } catch (error) {
+    if (error.name === 'TypeError') {
+      sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+      return;
+    }
+    sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
   }
 
   User.findByIdAndUpdate(req.user._id, userData, { new: true })
