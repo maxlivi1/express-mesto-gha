@@ -18,6 +18,11 @@ mongoose.connect(`${DB_PATH}${DB_NAME}`, {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+  req.user = { _id: '649ea0a00c567ed792814472' };
+  next();
+});
+
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
 app.use('*', notFoundPageRouter);
