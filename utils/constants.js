@@ -42,6 +42,11 @@ const ERRORS = {
     statusCode: STATUS_CODES.NOT_FOUND_ERROR,
     message: 'Карточка с указанным id не найдена',
   },
+  NOT_FOUND_PAGE_ERROR: {
+    name: 'NotFoundPageError',
+    statusCode: STATUS_CODES.NOT_FOUND_ERROR,
+    message: 'Страница по запрашиваемому адресу не существует.',
+  },
   INTERNAL_SERVER_ERROR: {
     name: 'InternalServerError',
     statusCode: STATUS_CODES.INTERNAL_SERVER_ERROR,
