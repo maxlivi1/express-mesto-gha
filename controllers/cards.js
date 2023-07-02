@@ -33,17 +33,16 @@ const createCard = (req, res) => {
 const deleteCard = (req, res) => {
   const { cardId } = req.params;
   Card.findByIdAndRemove(cardId)
-    .then((card) => {
-      if (!card) {
-        sendError(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name), res);
-        return;
-      }
-      res.status(STATUS_CODES.OK).send(card);
-    })
+    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+    .then((card) => res.status(STATUS_CODES.OK).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError
         || err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
+        return;
+      }
+      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
+        sendError(err, res);
         return;
       }
       sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
@@ -58,18 +57,17 @@ const getCards = (req, res) => {
 
 const likeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        sendError(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name), res);
-        return;
-      }
-      res.status(STATUS_CODES.OK).send(card);
-    })
+    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+    .then((card) => res.status(STATUS_CODES.OK).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError
         || err instanceof mongoose.Error.CastError
         || err instanceof mongoose.Error.ValidationError) {
         sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
+        return;
+      }
+      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
+        sendError(err, res);
         return;
       }
       sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
@@ -78,18 +76,17 @@ const likeCard = (req, res) => {
 
 const dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        sendError(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name), res);
-        return;
-      }
-      res.status(STATUS_CODES.OK).send(card);
-    })
+    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+    .then((card) => res.status(STATUS_CODES.OK).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError
         || err instanceof mongoose.Error.CastError
         || err instanceof mongoose.Error.ValidationError) {
         sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
+        return;
+      }
+      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
+        sendError(err, res);
         return;
       }
       sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
