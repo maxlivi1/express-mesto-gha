@@ -21,6 +21,7 @@ const createUser = (req, res) => {
       return;
     }
     sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
+    return;
   }
 
   User.create({ name, about, avatar })
@@ -87,6 +88,7 @@ const updateUserProfile = (req, res) => {
       return;
     }
     sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
+    return;
   }
 
   User.findByIdAndUpdate(req.user._id, userData, { new: true })
@@ -113,6 +115,19 @@ const updateUserProfile = (req, res) => {
 
 const updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
+  try {
+    if (!avatar.trim()) {
+      sendError(throwError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name), res);
+      return;
+    }
+  } catch (error) {
+    if (error.name === 'TypeError') {
+      sendError(throwError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name), res);
+      return;
+    }
+    sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
+    return;
+  }
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
     .then((user) => {
       if (!user) {

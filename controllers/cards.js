@@ -17,6 +17,7 @@ const createCard = (req, res) => {
       return;
     }
     sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
+    return;
   }
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(STATUS_CODES.CREATED).send(card))
