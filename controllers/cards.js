@@ -6,23 +6,11 @@ const throwError = require('../errors/throwError');
 
 const createCard = (req, res) => {
   const { name, link } = req.body;
-  try {
-    if (name.trim().length < 2 || name.trim().length > 30 || !link.trim()) {
-      sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
-      return;
-    }
-  } catch (error) {
-    if (error.name === 'TypeError') {
-      sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
-      return;
-    }
-    sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    return;
-  }
+
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(STATUS_CODES.CREATED).send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
+      if (err instanceof mongoose.Error.ValidationError || err.name === 'TypeError') {
         sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
         return;
       }
@@ -34,10 +22,9 @@ const deleteCard = (req, res) => {
   const { cardId } = req.params;
   Card.findByIdAndRemove(cardId)
     .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.status(STATUS_CODES.OK).send(card))
+    .then((card) => res.send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError
-        || err instanceof mongoose.Error.CastError) {
+      if (err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
         return;
       }
@@ -51,18 +38,16 @@ const deleteCard = (req, res) => {
 
 const getCards = (req, res) => {
   Card.find({})
-    .then((cards) => res.status(STATUS_CODES.OK).send(cards))
+    .then((cards) => res.send(cards))
     .catch((err) => sendError(err, res));
 };
 
 const likeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
     .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.status(STATUS_CODES.OK).send(card))
+    .then((card) => res.send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError
-        || err instanceof mongoose.Error.CastError
-        || err instanceof mongoose.Error.ValidationError) {
+      if (err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
         return;
       }
@@ -77,11 +62,9 @@ const likeCard = (req, res) => {
 const dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.status(STATUS_CODES.OK).send(card))
+    .then((card) => res.send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError
-        || err instanceof mongoose.Error.CastError
-        || err instanceof mongoose.Error.ValidationError) {
+      if (err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
         return;
       }
