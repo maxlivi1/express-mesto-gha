@@ -1,16 +1,23 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { sendError } = require('../errors/sendError');
 const User = require('../models/user');
 const throwError = require('../errors/throwError');
 const { ERRORS, STATUS_CODES } = require('../utils/constants');
 
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  User.create({ name, about, avatar })
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => res.status(STATUS_CODES.CREATED).send(user))
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError || err.name === 'TypeError') {
+      // console.log(err);
+      if (err instanceof mongoose.Error.ValidationError || err.name === 'MongoServerError') {
         sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
         return;
       }
@@ -49,8 +56,7 @@ const updateUserProfile = (req, res) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError
-        || err instanceof mongoose.Error.ValidationError
-        || err.name === 'TypeError') {
+        || err instanceof mongoose.Error.ValidationError) {
         sendError(throwError(ERRORS.BAD_USER_PROFILE_REQUEST_ERROR.name), res);
         return;
       }
@@ -70,8 +76,7 @@ const updateUserAvatar = (req, res) => {
     .then((user) => res.send({ avatar: user.avatar }))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError
-        || err instanceof mongoose.Error.ValidationError
-        || err.name === 'TypeError') {
+        || err instanceof mongoose.Error.ValidationError) {
         sendError(throwError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name), res);
         return;
       }
