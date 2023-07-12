@@ -4,8 +4,9 @@ const { sendError } = require('../errors/sendError');
 const User = require('../models/user');
 const throwError = require('../errors/throwError');
 const { ERRORS, STATUS_CODES } = require('../utils/constants');
+const { getJwtToken } = require('../helpers/jwt');
 
-const createUser = (req, res) => {
+const registration = (req, res) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -14,22 +15,27 @@ const createUser = (req, res) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then((user) => res.status(STATUS_CODES.CREATED).send(user))
+    .then((user) => res.status(STATUS_CODES.CREATED).send({ _id: user._id }))
     .catch((err) => {
-      // console.log(err);
-      if (err instanceof mongoose.Error.ValidationError || err.name === 'MongoServerError') {
+      // console.log(err.name);
+      if (err instanceof mongoose.Error.ValidationError) {
         sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
+        return;
+      }
+      if (err.code === 11000) {
+        sendError(throwError(ERRORS.BAD_REGISTRATION_ERROR.name), res);
         return;
       }
       sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
     });
 };
 
-const getUserById = (req, res) => {
-  User.findById(req.params.userId)
+const getUserInfo = (req, res) => {
+  User.findById(req.user._id)
     .orFail(throwError(ERRORS.NOT_FOUND_USER_ERROR.name))
     .then((user) => res.send(user))
     .catch((err) => {
+      console.log(req.params.userId);
       if (err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
         return;
@@ -88,10 +94,35 @@ const updateUserAvatar = (req, res) => {
     });
 };
 
+const login = (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return sendError(throwError(ERRORS.BAD_LOGIN_ERROR.name), res);
+
+  return User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) return Promise.reject(throwError(ERRORS.BAD_LOGIN_ERROR.name));
+
+      return bcrypt.compare(password, user.password, (err, isValid) => {
+        try {
+          if (!isValid || err) return sendError(throwError(ERRORS.BAD_LOGIN_ERROR.name), res);
+          const token = getJwtToken(user._id);
+          return res.send({ token });
+        } catch (e) {
+          return sendError(e, res);
+        }
+      });
+    })
+    .catch((err) => {
+      // console.log(err.name);
+      sendError(err, res);
+    });
+};
+
 module.exports = {
-  createUser,
-  getUserById,
+  registration,
+  getUserInfo,
   getUsers,
   updateUserProfile,
   updateUserAvatar,
+  login,
 };

@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const userRouter = require('./routes/users');
 const cardRouter = require('./routes/cards');
 const notFoundPageRouter = require('./routes/notFoundPage');
+const { login, registration } = require('./controllers/users');
+const { auth } = require('./middlewares/auth');
 
 const { PORT = 3000 } = process.env;
 const DB_PATH = 'mongodb://127.0.0.1:27017/';
@@ -18,13 +20,13 @@ mongoose.connect(`${DB_PATH}${DB_NAME}`, {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  req.user = { _id: '649ea0a00c567ed792814472' };
-  next();
-});
+app.post('/signin', login);
+app.post('/signup', registration);
 
+app.use(auth);
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
+
 app.use('*', notFoundPageRouter);
 
 app.listen(PORT, () => {
