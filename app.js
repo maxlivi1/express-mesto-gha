@@ -23,9 +23,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.post('/signin', login);
 app.post('/signup', registration);
 
-app.use(auth);
-app.use('/users', userRouter);
-app.use('/cards', cardRouter);
+app.use('/users', auth, userRouter);
+app.use('/cards', auth, cardRouter);
 
 app.use('*', notFoundPageRouter);
 

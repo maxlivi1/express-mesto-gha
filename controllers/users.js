@@ -35,7 +35,6 @@ const getUserInfo = (req, res) => {
     .orFail(throwError(ERRORS.NOT_FOUND_USER_ERROR.name))
     .then((user) => res.send(user))
     .catch((err) => {
-      console.log(req.params.userId);
       if (err instanceof mongoose.Error.CastError) {
         sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
         return;
@@ -106,7 +105,7 @@ const login = (req, res) => {
         try {
           if (!isValid || err) return sendError(throwError(ERRORS.BAD_LOGIN_ERROR.name), res);
           const token = getJwtToken(user._id);
-          return res.send({ token });
+          return res.send({ token }); // отправить через HttpOnly
         } catch (e) {
           return sendError(e, res);
         }

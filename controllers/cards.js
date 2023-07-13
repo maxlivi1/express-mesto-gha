@@ -20,20 +20,32 @@ const createCard = (req, res) => {
 
 const deleteCard = (req, res) => {
   const { cardId } = req.params;
-  Card.findByIdAndRemove(cardId)
+  const { _id } = req.user;
+
+  Card.findById(cardId)
     .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.send(card))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
-        return;
+    .then((card) => {
+      if (!card) return throwError(ERRORS.NOT_FOUND_CARD_ERROR.name);
+      if (_id !== card.owner.toString()) {
+        res.send({ message: 'Вы не можете удалить эту карточку, так как не являетесь её хозяином' });
+        return null;
       }
-      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      return Card.findByIdAndRemove(cardId)
+        .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+        .then((removedCard) => res.send(removedCard))
+        .catch((err) => {
+          if (err instanceof mongoose.Error.CastError) {
+            sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
+            return;
+          }
+          if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
+            sendError(err, res);
+            return;
+          }
+          sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
+        });
+    })
+    .catch((err) => sendError(err, res));
 };
 
 const getCards = (req, res) => {

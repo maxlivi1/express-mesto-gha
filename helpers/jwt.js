@@ -3,7 +3,7 @@ const User = require('../models/user');
 
 const JWT_SECRET = 'U5LgdqX2YGeDbu2VO5AIU7a20M9gN';
 
-const getJwtToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
+const getJwtToken = (id) => jwt.sign({ _id: id }, JWT_SECRET, { expiresIn: '7d' });
 
 const isAuthorized = (token) => jwt.verify(token, JWT_SECRET, (err, payload) => {
   if (err) return false;
@@ -13,7 +13,7 @@ const isAuthorized = (token) => jwt.verify(token, JWT_SECRET, (err, payload) => 
 });
 const getPayload = (token) => jwt.verify(token, JWT_SECRET, (err, payload) => {
   if (err) return null;
-  console.log(payload);
+  // console.log(payload);
   return payload;
 });
 
