@@ -55,7 +55,7 @@ const ERRORS = {
   },
   INTERNAL_SERVER_ERROR: {
     name: 'InternalServerError',
-    message: 'Что-то пошло не так. Ваш запрос не выполнен.',
+    message: 'Что-то пошло не так. Ошибка на сервере.',
   },
 };
 

@@ -1,91 +1,82 @@
 const mongoose = require('mongoose');
-const { sendError } = require('../errors/sendError');
 const Card = require('../models/card');
 const { STATUS_CODES, ERRORS } = require('../utils/constants');
-const throwError = require('../errors/throwError');
+const AppError = require('../errors/AppError');
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(STATUS_CODES.CREATED).send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError || err.name === 'TypeError') {
-        sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
-        return;
+      if (err instanceof mongoose.Error.ValidationError) {
+        throw AppError(ERRORS.BAD_CARD_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
-const deleteCard = (req, res) => {
+const getCards = (req, res, next) => {
+  Card.find({})
+    .then((cards) => res.send(cards))
+    .catch(next);
+};
+
+const likeCard = (req, res, next) => {
+  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
+    .orFail(AppError(ERRORS.NOT_FOUND_CARD_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
+    .then((card) => res.send(card))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        throw AppError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
+      }
+      next(err);
+    })
+    .catch(next);
+};
+
+const dislikeCard = (req, res, next) => {
+  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
+    .orFail(AppError(ERRORS.NOT_FOUND_CARD_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
+    .then((card) => res.send(card))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        throw AppError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
+      }
+      next(err);
+    })
+    .catch(next);
+};
+
+const deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   const { _id } = req.user;
 
   Card.findById(cardId)
-    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+    .orFail(AppError(ERRORS.NOT_FOUND_CARD_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
     .then((card) => {
-      if (!card) return throwError(ERRORS.NOT_FOUND_CARD_ERROR.name);
       if (_id !== card.owner.toString()) {
         res.send({ message: 'Вы не можете удалить эту карточку, так как не являетесь её хозяином' });
-        return null;
+        return;
       }
-      return Card.findByIdAndRemove(cardId)
-        .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
+      Card.findByIdAndRemove(cardId)
         .then((removedCard) => res.send(removedCard))
         .catch((err) => {
           if (err instanceof mongoose.Error.CastError) {
-            sendError(throwError(ERRORS.BAD_CARD_REQUEST_ERROR.name), res);
-            return;
+            throw AppError(ERRORS.BAD_CARD_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
           }
-          if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
-            sendError(err, res);
-            return;
-          }
-          sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-        });
+          next(err);
+        })
+        .catch(next);
     })
-    .catch((err) => sendError(err, res));
-};
-
-const getCards = (req, res) => {
-  Card.find({})
-    .then((cards) => res.send(cards))
-    .catch((err) => sendError(err, res));
-};
-
-const likeCard = (req, res) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
-        return;
+        throw AppError(ERRORS.BAD_CARD_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
-};
-
-const dislikeCard = (req, res) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(throwError(ERRORS.NOT_FOUND_CARD_ERROR.name))
-    .then((card) => res.send(card))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        sendError(throwError(ERRORS.BAD_CARD_LIKE_REQUEST_ERROR.name), res);
-        return;
-      }
-      if (err.name === ERRORS.NOT_FOUND_CARD_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
 module.exports = {
