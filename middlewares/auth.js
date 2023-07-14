@@ -1,22 +1,18 @@
-const { sendError } = require('../errors/sendError');
-const throwError = require('../errors/throwError');
+const AppError = require('../errors/AppError');
 const { isAuthorized, getPayload } = require('../helpers/jwt');
-const { ERRORS } = require('../utils/constants');
+const { ERRORS, STATUS_CODES } = require('../utils/constants');
 
 const auth = (req, res, next) => {
   const { authorization } = req.headers;
-  // console.log('authorization', authorization);
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    // console.log('Check authorization');
-    sendError(throwError(ERRORS.NOT_AUTH_USER_ERROR.name), res);
+    next(AppError(ERRORS.NOT_AUTH_USER_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR));
     return;
   }
   const token = authorization.replace('Bearer ', '');
   if (!isAuthorized(token)) {
-    sendError(throwError(ERRORS.NOT_AUTH_USER_ERROR.name), res);
+    next(AppError(ERRORS.NOT_AUTH_USER_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR));
     return;
   }
-  // console.log('getPayload');
   req.user = { _id: getPayload(token).id };
   next();
 };

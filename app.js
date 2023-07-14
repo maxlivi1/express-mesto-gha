@@ -8,6 +8,7 @@ const cardRouter = require('./routes/cards');
 const notFoundPageRouter = require('./routes/notFoundPage');
 const { login, registration } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
+const { errorHandler } = require('./middlewares/errorHandler');
 
 const { PORT = 3000 } = process.env;
 const DB_PATH = 'mongodb://127.0.0.1:27017/';
@@ -27,6 +28,8 @@ app.use('/users', auth, userRouter);
 app.use('/cards', auth, cardRouter);
 
 app.use('*', notFoundPageRouter);
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log('Слушаю порт:', PORT);

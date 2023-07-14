@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { sendError } = require('../errors/sendError');
 const User = require('../models/user');
-const throwError = require('../errors/throwError');
+const AppError = require('../errors/AppError');
 const { ERRORS, STATUS_CODES } = require('../utils/constants');
 const { getJwtToken } = require('../helpers/jwt');
 
-const registration = (req, res) => {
+const registration = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -17,104 +16,88 @@ const registration = (req, res) => {
     }))
     .then((user) => res.status(STATUS_CODES.CREATED).send({ _id: user._id }))
     .catch((err) => {
-      // console.log(err.name);
       if (err instanceof mongoose.Error.ValidationError) {
-        sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
-        return;
+        throw AppError(ERRORS.BAD_USER_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      if (err.code === 11000) {
-        sendError(throwError(ERRORS.BAD_REGISTRATION_ERROR.name), res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
-const getUserInfo = (req, res) => {
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    next(AppError(ERRORS.BAD_LOGIN_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR));
+    return;
+  }
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) throw AppError(ERRORS.BAD_LOGIN_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR);
+
+      bcrypt.compare(password, user.password, (err, isValid) => {
+        try {
+          if (!isValid || err) {
+            throw AppError(ERRORS.BAD_LOGIN_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR);
+          }
+          const token = getJwtToken(user._id);
+          res.send({ token }); // отправить через HttpOnly
+        } catch (error) {
+          next(error);
+        }
+      });
+    })
+    .catch(next);
+};
+
+const getUserInfo = (req, res, next) => {
   User.findById(req.user._id)
-    .orFail(throwError(ERRORS.NOT_FOUND_USER_ERROR.name))
+    .orFail(AppError(ERRORS.NOT_FOUND_USER_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        sendError(throwError(ERRORS.BAD_USER_REQUEST_ERROR.name), res);
-        return;
+        throw AppError(ERRORS.BAD_USER_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      if (err.name === ERRORS.NOT_FOUND_USER_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch((err) => sendError(err, res));
+    .catch(next);
 };
 
-const updateUserProfile = (req, res) => {
+const updateUserProfile = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail(throwError(ERRORS.NOT_FOUND_USER_ERROR.name))
+    .orFail(AppError(ERRORS.NOT_FOUND_USER_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
     .then((user) => res.send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError
         || err instanceof mongoose.Error.ValidationError) {
-        sendError(throwError(ERRORS.BAD_USER_PROFILE_REQUEST_ERROR.name), res);
-        return;
+        throw AppError(ERRORS.BAD_USER_PROFILE_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      if (err.name === ERRORS.NOT_FOUND_USER_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
-const updateUserAvatar = (req, res) => {
+const updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .orFail(throwError(ERRORS.NOT_FOUND_USER_ERROR.name))
+    .orFail(AppError(ERRORS.NOT_FOUND_USER_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
     .then((user) => res.send({ avatar: user.avatar }))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError
         || err instanceof mongoose.Error.ValidationError) {
-        sendError(throwError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name), res);
-        return;
+        throw AppError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
-      if (err.name === ERRORS.NOT_FOUND_USER_ERROR.name) {
-        sendError(err, res);
-        return;
-      }
-      sendError(throwError(ERRORS.INTERNAL_SERVER_ERROR.name), res);
-    });
-};
-
-const login = (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return sendError(throwError(ERRORS.BAD_LOGIN_ERROR.name), res);
-
-  return User.findOne({ email }).select('+password')
-    .then((user) => {
-      if (!user) return Promise.reject(throwError(ERRORS.BAD_LOGIN_ERROR.name));
-
-      return bcrypt.compare(password, user.password, (err, isValid) => {
-        try {
-          if (!isValid || err) return sendError(throwError(ERRORS.BAD_LOGIN_ERROR.name), res);
-          const token = getJwtToken(user._id);
-          return res.send({ token }); // отправить через HttpOnly
-        } catch (e) {
-          return sendError(e, res);
-        }
-      });
+      next(err);
     })
-    .catch((err) => {
-      // console.log(err.name);
-      sendError(err, res);
-    });
+    .catch(next);
 };
 
 module.exports = {

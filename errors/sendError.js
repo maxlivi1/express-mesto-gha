@@ -5,13 +5,13 @@ const sendError = (err, res) => {
   let isError = false;
   keys.forEach((errKey) => {
     if (ERRORS[errKey].name === err.name) {
-      res.status(ERRORS[errKey].statusCode).send({ message: ERRORS[errKey].message });
+      res.status(err.code).send({ message: ERRORS[errKey].message });
       isError = true;
     }
   });
   if (!isError) {
     res
-      .status(ERRORS.INTERNAL_SERVER_ERROR.statusCode)
+      .status(err.code)
       .send({ message: ERRORS.INTERNAL_SERVER_ERROR.message });
   }
 };
