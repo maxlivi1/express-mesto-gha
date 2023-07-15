@@ -3,17 +3,17 @@ const { isAuthorized, getPayload } = require('../helpers/jwt');
 const { ERRORS, STATUS_CODES } = require('../utils/constants');
 
 const auth = (req, res, next) => {
-  const { authorization } = req.headers;
-  if (!authorization || !authorization.startsWith('Bearer ')) {
+  const { jwt } = req.cookies;
+  if (!jwt) {
     next(AppError(ERRORS.NOT_AUTH_USER_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR));
     return;
   }
-  const token = authorization.replace('Bearer ', '');
-  if (!isAuthorized(token)) {
+
+  if (!isAuthorized(jwt)) {
     next(AppError(ERRORS.NOT_AUTH_USER_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR));
     return;
   }
-  req.user = { _id: getPayload(token).id };
+  req.user = { _id: getPayload(jwt)._id };
   next();
 };
 

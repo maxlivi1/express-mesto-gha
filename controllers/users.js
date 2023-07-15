@@ -17,6 +17,7 @@ const registration = (req, res, next) => {
     .then((user) => res.status(STATUS_CODES.CREATED).send({ _id: user._id }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
+        // console.log(err.message);
         throw AppError(ERRORS.BAD_USER_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
       next(err);
@@ -40,7 +41,12 @@ const login = (req, res, next) => {
             throw AppError(ERRORS.BAD_LOGIN_ERROR.name, STATUS_CODES.BAD_LOGIN_ERROR);
           }
           const token = getJwtToken(user._id);
-          res.send({ token }); // отправить через HttpOnly
+          res
+            .cookie('jwt', token, {
+              maxAge: 3600000 * 24 * 7,
+              httpOnly: true,
+            })
+            .send({ message: 'Вы авторизованы' });
         } catch (error) {
           next(error);
         }
@@ -93,6 +99,7 @@ const updateUserAvatar = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError
         || err instanceof mongoose.Error.ValidationError) {
+        // console.log(err.message);
         throw AppError(ERRORS.BAD_USER_AVATAR_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
       next(err);

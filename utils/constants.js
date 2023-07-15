@@ -59,4 +59,6 @@ const ERRORS = {
   },
 };
 
-module.exports = { STATUS_CODES, ERRORS };
+const URL_PATTERN = /^(https?:\/\/)(w{3}\.)?[\w#\-/._~:?[\]@!$&'()*+,;=]*#?$/;
+
+module.exports = { STATUS_CODES, ERRORS, URL_PATTERN };

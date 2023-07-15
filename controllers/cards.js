@@ -10,6 +10,8 @@ const createCard = (req, res, next) => {
     .then((card) => res.status(STATUS_CODES.CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
+        // console.log(err.message);
+        // console.log(err);
         throw AppError(ERRORS.BAD_CARD_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
       }
       next(err);
