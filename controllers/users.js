@@ -14,7 +14,14 @@ const registration = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then((user) => res.status(STATUS_CODES.CREATED).send({ _id: user._id }))
+    .then((user) => res.status(STATUS_CODES.CREATED)
+      .send({
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+      }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         // console.log(err.message);
@@ -51,6 +58,21 @@ const login = (req, res, next) => {
           next(error);
         }
       });
+    })
+    .catch(next);
+};
+
+const getUser = (req, res, next) => {
+  const { userId } = req.params;
+
+  User.findById(userId)
+    .orFail(AppError(ERRORS.NOT_FOUND_USER_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        throw AppError(ERRORS.BAD_USER_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
+      }
+      next(err);
     })
     .catch(next);
 };
@@ -110,6 +132,7 @@ const updateUserAvatar = (req, res, next) => {
 module.exports = {
   registration,
   getUserInfo,
+  getUser,
   getUsers,
   updateUserProfile,
   updateUserAvatar,
