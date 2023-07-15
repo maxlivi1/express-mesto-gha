@@ -10,12 +10,12 @@ const {
 const { URL_PATTERN } = require('../utils/constants');
 
 userRouter.get('/', getUsers);
+userRouter.get('/me', getUserInfo);
 userRouter.get('/:userId', celebrate({
   params: Joi.object().keys({
     userId: Joi.string().required().length(24),
   }),
 }), getUser);
-userRouter.get('/me', getUserInfo);
 userRouter.patch('/me', celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),

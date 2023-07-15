@@ -3,7 +3,7 @@ const STATUS_CODES = {
   CREATED: 201,
   BAD_REQUEST_ERROR: 400,
   BAD_LOGIN_ERROR: 401,
-  PAGE_NOT_FOUND_ERROR: 403,
+  FORBIDDEN_ERROR: 403,
   NOT_FOUND_ERROR: 404,
   BAD_REGISTRATION_ERROR: 409,
   INTERNAL_SERVER_ERROR: 500,
@@ -53,6 +53,10 @@ const ERRORS = {
   BAD_REGISTRATION_ERROR: {
     name: 'BadRegistrationError',
     message: 'Пользователь с таким email уже зарегистрирован.',
+  },
+  FORBIDDEN_ERROR: {
+    name: 'ForbiddenError',
+    message: 'У вас не достаточно прав для данной операции.',
   },
   INTERNAL_SERVER_ERROR: {
     name: 'InternalServerError',

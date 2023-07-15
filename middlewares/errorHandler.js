@@ -12,7 +12,7 @@ const errorHandler = (err, req, res, next) => {
   }
   if (err.code === STATUS_CODES.BAD_LOGIN_ERROR || STATUS_CODES.BAD_REGISTRATION_ERROR
     || STATUS_CODES.BAD_REQUEST_ERROR || STATUS_CODES.NOT_FOUND_ERROR
-    || STATUS_CODES.INTERNAL_SERVER_ERROR) {
+    || STATUS_CODES.FORBIDDEN_ERROR || STATUS_CODES.INTERNAL_SERVER_ERROR) {
     sendError(err, res);
     return;
   }

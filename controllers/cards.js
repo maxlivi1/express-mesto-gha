@@ -59,8 +59,7 @@ const deleteCard = (req, res, next) => {
     .orFail(AppError(ERRORS.NOT_FOUND_CARD_ERROR.name, STATUS_CODES.NOT_FOUND_ERROR))
     .then((card) => {
       if (_id !== card.owner.toString()) {
-        res.send({ message: 'Вы не можете удалить эту карточку, так как не являетесь её хозяином' });
-        return;
+        throw AppError(ERRORS.FORBIDDEN_ERROR.name, STATUS_CODES.FORBIDDEN_ERROR);
       }
       Card.findByIdAndRemove(cardId)
         .then((removedCard) => res.send(removedCard))
