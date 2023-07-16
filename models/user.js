@@ -15,7 +15,6 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: [6, 'Некорректные данные: Поле должно содержать не менее 6 символов'],
     select: false,
   },
   name: {

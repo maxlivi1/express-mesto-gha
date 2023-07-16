@@ -15,12 +15,10 @@ const { errorHandler } = require('./middlewares/errorHandler');
 const { URL_PATTERN } = require('./utils/constants');
 const limiter = require('./helpers/rateLimit');
 
-const { PORT = 3000 } = process.env;
-const DB_PATH = 'mongodb://127.0.0.1:27017/';
-const DB_NAME = 'mestodb';
+const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
 const app = express();
-mongoose.connect(`${DB_PATH}${DB_NAME}`, {
+mongoose.connect(DB_URL, {
   useNewUrlParser: true,
 });
 

@@ -61,8 +61,8 @@ const deleteCard = (req, res, next) => {
       if (_id !== card.owner.toString()) {
         throw AppError(ERRORS.FORBIDDEN_ERROR.name, STATUS_CODES.FORBIDDEN_ERROR);
       }
-      Card.findByIdAndRemove(cardId)
-        .then((removedCard) => res.send(removedCard))
+      Card.deleteOne({ _id: card._id })
+        .then(() => res.send(card))
         .catch((err) => {
           if (err instanceof mongoose.Error.CastError) {
             throw AppError(ERRORS.BAD_CARD_REQUEST_ERROR.name, STATUS_CODES.BAD_REQUEST_ERROR);
